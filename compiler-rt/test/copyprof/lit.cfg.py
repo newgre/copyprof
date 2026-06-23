@@ -16,8 +16,8 @@ config.substitutions.append(
     ("%env_copyprof_opts=", "env COPYPROF_OPTIONS=" + default_copyprof_opts_str)
 )
 
-# Setup default compiler flags used with -fcopy-prof option.
-clang_copyprof_cflags = ["-fcopy-prof"] + [config.target_cflags]
+# Setup default compiler flags used with -fcopyprof option.
+clang_copyprof_cflags = ["-fcopyprof"] + [config.target_cflags]
 clang_copyprof_cxxflags = config.cxx_mode_flags + clang_copyprof_cflags
 
 

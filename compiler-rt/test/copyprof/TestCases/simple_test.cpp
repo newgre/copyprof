@@ -1,4 +1,4 @@
-// RUN: %clangxx_copyprof -O0 -fcopy-prof-static-size-threshold=24 %s -o %t
+// RUN: %clangxx_copyprof -O0 -fcopyprof-static-size-threshold=24 %s -o %t
 // RUN: %env_copyprof_opts=must_allocate=0:obj_size_threshold=16 %run %t 2>&1 | FileCheck %s --dump-input=always
 
 #include <cstdint>
