@@ -20,7 +20,9 @@ file(GLOB COPYPROF_HEADERS ../*.h)
 set(COPYPROF_NOINST_TEST_SOURCES
   driver.cpp
   copyprof_shadow_test.cpp
-  copyprof_state_test.cpp)
+  copyprof_state_test.cpp
+  copyprof_report_buffer_test.cpp
+  copyprof_report_sink_test.cpp)
 
 include_directories(.. ../..)
 
