@@ -76,6 +76,7 @@ class SanitizerArgs {
   // True if cross-dso CFI support if provided by the system (i.e. Android).
   bool ImplicitCfiRuntime = false;
   bool NeedsMemProfRt = false;
+  bool NeedsCopyProfRt = false;
   bool HwasanUseAliases = false;
   llvm::AsanDetectStackUseAfterReturnMode AsanUseAfterReturn =
       llvm::AsanDetectStackUseAfterReturnMode::Invalid;
@@ -111,6 +112,7 @@ public:
            !Sanitizers.has(SanitizerKind::Address) &&
            !Sanitizers.has(SanitizerKind::HWAddress);
   }
+  bool needsCopyProfRt() const { return NeedsCopyProfRt; }
   bool needsFuzzerInterceptors() const;
   bool needsUbsanRt() const;
   bool needsUbsanCXXRt() const;
