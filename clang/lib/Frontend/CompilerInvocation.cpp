@@ -1803,6 +1803,9 @@ void CompilerInvocationBase::GenerateCodeGenArgs(const CodeGenOptions &Opts,
        serializeSanitizerKinds(Opts.SanitizeAnnotateDebugInfo))
     GenerateArg(Consumer, OPT_fsanitize_annotate_debug_info_EQ, Sanitizer);
 
+  if (Opts.CopyProf)
+    GenerateArg(Consumer, OPT_fcopy_prof);
+
   if (!Opts.EmitVersionIdentMetadata)
     GenerateArg(Consumer, OPT_Qn);
 
@@ -2305,6 +2308,10 @@ bool CompilerInvocation::ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args,
       Opts.AllowRuntimeCheckSkipHotCutoff = A;
     }
   }
+
+  // Parse -fcopy-prof / -fno-copy-prof.
+  if (Args.hasFlag(OPT_fcopy_prof, OPT_fno_copy_prof, false))
+    Opts.CopyProf = 1;
 
   Opts.EmitVersionIdentMetadata = Args.hasFlag(OPT_Qy, OPT_Qn, true);
 
