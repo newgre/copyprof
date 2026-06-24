@@ -11,7 +11,10 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "copyprof_allocator.h"
+#include "copyprof_interceptors.h"
 #include "copyprof_interface_internal.h"
+#include "copyprof_per_object_state.h"
 #include "copyprof_reporting.h"
 #include "copyprof_shadow.h"
 #include "copyprof_state.h"
@@ -41,9 +44,23 @@ static void Initialize() {
         "BUG: CopyProf Initialize() must not call itself.");
   copyprof_init_is_running = true;
   CacheBinaryName();
+  // CopyProf uses interception so ensure we're not statically linked.
+  __interception::DoesNotSupportStaticLinking();
   SetCheckUnwindCallback(&CheckUnwind);
   InitializePlatformEarly();
+  InitializeInterceptors();
   InitializeShadowMemory();
+  InitializePerObjectTracking();
+  InitializeCopyProfAllocator();
+  // Threads generally flush their report buffers when they exit or when their
+  // buffers are full. If they keep running until after atexit handlers run,
+  // those events will be lost.
+  // The main thread executes the atexit handlers, so just before disabling the
+  // background flusher, any remaining reports in the main thread's buffer are
+  // flushed.
+  Atexit([]() {
+    FlushAndReturnCurrentThreadBuffer();
+  });
   copyprof_init_is_running = false;
   copyprof_is_initialized = true;
 }
@@ -63,6 +80,8 @@ static void MaybeUpdateCurrentMode(ShadowUpdateMode mode) {
 static void CopyMemberFunctionEnter(const void* this_ptr, uptr obj_size) {
   MaybeUpdateCurrentMode(ShadowUpdateMode::MARK_COPY);
   if (__copyprof_state.copy_nesting_level++ == 0) {
+    // This is the top-level copy ctor so initialize per-object state.
+    InitPerObjectState(this_ptr, obj_size);
     __copyprof_state.current_this_ptr = this_ptr;
   }
   MarkApplicationMemory(
@@ -135,8 +154,13 @@ void __copyprof_dtor_exit_callback(const void* this_ptr, uptr obj_size) {
   __copyprof_state.is_transitive_copy &= IsMarkedAsCopy(this_ptr, obj_size);
   if (__copyprof_state.destruct_nesting_level == 0 &&
       __copyprof_state.is_transitive_copy) {
-    LogCopyProfReport(GET_CALLER_PC(), GET_CURRENT_FRAME(), obj_size,
-                      /*did_allocate=*/true);
+    LogCopyProfReport(GET_CALLER_PC(), GET_CURRENT_FRAME(),
+                      GetPerObjectTrackedSize(this_ptr),
+                      GetPerObjectDidAllocate(this_ptr));
+  }
+  // Clean up per-object state when top-level destructor exits.
+  if (__copyprof_state.destruct_nesting_level == 0) {
+    RemovePerObjectState(this_ptr);
   }
 }
 
