@@ -12,12 +12,16 @@
 //===----------------------------------------------------------------------===//
 
 #include "copyprof_allocator.h"
+#include "copyprof_flags.h"
 #include "copyprof_interceptors.h"
 #include "copyprof_interface_internal.h"
 #include "copyprof_per_object_state.h"
+#include "copyprof_report_backend.h"
+#include "copyprof_report_sink.h"
 #include "copyprof_reporting.h"
 #include "copyprof_shadow.h"
 #include "copyprof_state.h"
+#include "copyprof_stdout_backend.h"
 #include "sanitizer_common/sanitizer_common.h"
 #include "sanitizer_common/sanitizer_internal_defs.h"
 
@@ -37,6 +41,10 @@ static void CheckUnwind() {
   trace.Print();
 }
 
+static ReportBackend* CreateReportBackend() {
+  return StdoutBackend::Create();
+}
+
 static void Initialize() {
   if (LIKELY(copyprof_is_initialized))
     return;
@@ -44,14 +52,17 @@ static void Initialize() {
         "BUG: CopyProf Initialize() must not call itself.");
   copyprof_init_is_running = true;
   CacheBinaryName();
+  InitializeFlags();
   // CopyProf uses interception so ensure we're not statically linked.
   __interception::DoesNotSupportStaticLinking();
   SetCheckUnwindCallback(&CheckUnwind);
   InitializePlatformEarly();
+
   InitializeInterceptors();
   InitializeShadowMemory();
   InitializePerObjectTracking();
   InitializeCopyProfAllocator();
+  EnableBackgroundFlushing(CreateReportBackend());
   // Threads generally flush their report buffers when they exit or when their
   // buffers are full. If they keep running until after atexit handlers run,
   // those events will be lost.
@@ -60,6 +71,7 @@ static void Initialize() {
   // flushed.
   Atexit([]() {
     FlushAndReturnCurrentThreadBuffer();
+    DisableBackgroundFlushing();
   });
   copyprof_init_is_running = false;
   copyprof_is_initialized = true;
