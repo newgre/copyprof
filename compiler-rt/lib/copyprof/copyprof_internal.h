@@ -1,0 +1,24 @@
+#ifndef COPYPROF_INTERNAL_H
+#define COPYPROF_INTERNAL_H
+
+#include "sanitizer_common/sanitizer_internal_defs.h"
+#include "sanitizer_common/sanitizer_stacktrace.h"
+
+using __sanitizer::u32;
+using __sanitizer::u64;
+using __sanitizer::uptr;
+using __sanitizer::usize;
+
+namespace __copyprof {
+
+using __sanitizer::BufferedStackTrace;
+extern bool copyprof_is_initialized;
+extern bool copyprof_init_is_running;
+
+// Initializes interceptors for libc heap functions such as `malloc`, `free`,
+// or similar.
+void InitializeHeapInterceptors();
+
+}  // namespace __copyprof
+
+#endif  // COPYPROF_INTERNAL_H

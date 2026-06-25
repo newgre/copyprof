@@ -2949,6 +2949,17 @@ def fsanitize_skip_hot_cutoff_EQ
           "(0.0 [default] = skip none; 1.0 = skip all). "
           "Argument format: <sanitizer1>=<value1>,<sanitizer2>=<value2>,...">;
 
+defm copy_prof
+    : OptInCC1FFlag<"copy-prof", "Enable", "Disable", " copy profiling">;
+def fcopy_profile_static_size_threshold_EQ
+    : Joined<["-"], "fcopy-prof-static-size-threshold=">,
+      Group<f_clang_Group>,
+      Visibility<[ClangOption, CC1Option]>,
+      MetaVarName<"<N>">,
+      HelpText<
+          "Minimum class size for CopyProf instrumentation (default: 16).">,
+      MarshallingInfoInt<CodeGenOpts<"CopyProfStaticSizeThreshold">, "16">;
+
 defm sanitize_alloc_token_fast_abi : BoolOption<"f", "sanitize-alloc-token-fast-abi",
   CodeGenOpts<"SanitizeAllocTokenFastABI">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption], "Use the AllocToken fast ABI">,

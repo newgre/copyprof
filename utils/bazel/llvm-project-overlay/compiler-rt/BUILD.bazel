@@ -159,6 +159,100 @@ cc_library(
     ],
 )
 
+# CopyProf and dependencies
+SANITIZER_COMMON_SOURCES = glob(
+    ["lib/sanitizer_common/*.cpp"],
+    exclude = [
+        "lib/sanitizer_common/sancov_*.cpp",
+        "lib/sanitizer_common/sanitizer_*_test.cpp",
+        "lib/sanitizer_common/*_win.cpp",
+        "lib/sanitizer_common/*_win_*.cpp",
+        "lib/sanitizer_common/*_mac.cpp",
+        "lib/sanitizer_common/*_fuchsia.cpp",
+        "lib/sanitizer_common/*_netbsd.cpp",
+        "lib/sanitizer_common/*_solaris.cpp",
+        "lib/sanitizer_common/*_linux.cpp",
+        "lib/sanitizer_common/*_posix.cpp",
+        "lib/sanitizer_common/*_linux_*.cpp",
+        "lib/sanitizer_common/*_posix_*.cpp",
+    ],
+)
+
+cc_library(
+    name = "sanitizer_common",
+    srcs = SANITIZER_COMMON_SOURCES + select({
+        "@platforms//os:linux": glob([
+            "lib/sanitizer_common/*_linux.cpp",
+            "lib/sanitizer_common/*_posix.cpp",
+            "lib/sanitizer_common/*_linux_*.cpp",
+            "lib/sanitizer_common/*_posix_*.cpp",
+        ]),
+        "//conditions:default": [],
+    }),
+    hdrs = glob([
+        "include/sanitizer/*.h",
+        "lib/sanitizer_common/*.h",
+        "lib/sanitizer_common/*.inc",
+        "lib/sanitizer_common/*.S",
+    ]),
+    includes = ["lib"],
+    linkopts = select({
+        "@platforms//os:linux": ["-lpthread", "-ldl", "-lm", "-lrt"],
+        "//conditions:default": [],
+    }),
+    linkstatic = True,
+    deps = [":config"],
+)
+
+cc_library(
+    name = "interception",
+    srcs = glob(
+        ["lib/interception/*.cpp"],
+        exclude = [
+            "lib/interception/*_win.cpp",
+            "lib/interception/*_mac.cpp",
+            "lib/interception/interception_type_test.cpp",
+            "lib/interception/*_linux.cpp",
+        ],
+    ) + select({
+         "@platforms//os:linux": glob([
+            "lib/interception/*_linux.cpp",
+        ]),
+        "//conditions:default": [],
+    }),
+    hdrs = glob(["lib/interception/*.h"]),
+    includes = ["lib"],
+    linkstatic = True,
+    deps = [":sanitizer_common"],
+)
+
+cc_library(
+    name = "copyprof",
+    srcs = glob(
+        ["lib/copyprof/*.cpp"],
+        exclude = ["lib/copyprof/copyprof_new_delete.cpp"],
+    ),
+    hdrs = glob([
+        "lib/copyprof/*.h",
+        "lib/copyprof/*.inc",
+    ]),
+    includes = ["lib"],
+    linkstatic = True,
+    deps = [
+        ":interception",
+        ":sanitizer_common",
+    ],
+)
+
+cc_library(
+    name = "copyprof_cxx",
+    srcs = ["lib/copyprof/copyprof_new_delete.cpp"],
+    hdrs = glob(["lib/copyprof/*.h"]),
+    linkstatic = True,
+    deps = [":copyprof"],
+)
+
+
 filegroup(
     name = "fuzzer_installed_hdrs",
     srcs = glob(["include/fuzzer/*.h"]),

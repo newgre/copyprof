@@ -2413,6 +2413,8 @@ public:
   /// runtime.
   void markAsIgnoreThreadCheckingAtRuntime(llvm::Function *Fn);
 
+  void MaybeAddCopyProfFnAttrs(GlobalDecl GD, llvm::Function *Fn);
+
   /// Emit code for the start of a function.
   /// \param Loc       The location to be associated with the function.
   /// \param StartLoc  The location of the function body.

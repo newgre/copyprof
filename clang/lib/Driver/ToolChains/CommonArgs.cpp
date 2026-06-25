@@ -1710,6 +1710,11 @@ collectSanitizerRuntimes(const ToolChain &TC, const ArgList &Args,
     StaticRuntimes.push_back("dfsan");
   if (SanArgs.needsLsanRt())
     StaticRuntimes.push_back("lsan");
+  if (SanArgs.needsCopyProfRt()) {
+    StaticRuntimes.push_back("copyprof");
+    if (SanArgs.linkCXXRuntimes())
+      StaticRuntimes.push_back("copyprof_cxx");
+  }
   if (SanArgs.needsMsanRt()) {
     StaticRuntimes.push_back("msan");
     if (SanArgs.linkCXXRuntimes())

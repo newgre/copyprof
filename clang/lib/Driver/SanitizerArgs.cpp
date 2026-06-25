@@ -1287,6 +1287,9 @@ SanitizerArgs::SanitizerArgs(const ToolChain &TC,
                                 options::OPT_fmemory_profile_EQ,
                                 options::OPT_fno_memory_profile, false);
 
+  NeedsCopyProfRt =
+      Args.hasFlag(options::OPT_fcopy_prof, options::OPT_fno_copy_prof, false);
+
   // Finally, initialize the set of available and recoverable sanitizers.
   Sanitizers.Mask |= Kinds;
   RecoverableSanitizers.Mask |= RecoverableKinds;
@@ -1547,6 +1550,8 @@ void SanitizerArgs::addArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
     CmdArgs.push_back("-mllvm");
     CmdArgs.push_back("-hwasan-experimental-use-page-aliases=1");
   }
+
+  Args.AddLastArg(CmdArgs, options::OPT_fcopy_profile_static_size_threshold_EQ);
 
   if (CfiCrossDso)
     CmdArgs.push_back("-fsanitize-cfi-cross-dso");

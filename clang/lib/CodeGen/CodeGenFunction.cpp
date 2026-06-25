@@ -1061,6 +1061,33 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
     }
   }
 
+  if (CGM.getCodeGenOpts().CopyProf) {
+    if (D && isa<CXXMethodDecl>(D)) {
+      const CXXMethodDecl *MD = cast<CXXMethodDecl>(D);
+      if (isa<CXXConstructorDecl>(MD) || isa<CXXDestructorDecl>(MD) ||
+          MD->isCopyAssignmentOperator()) {
+        // Since `this` a special member function it must always have an
+        // associated ptr type.
+        int64_t ObjSize =
+            getContext()
+                .getTypeSizeInChars(
+                    MD->getThisType().getTypePtr()->getPointeeType())
+                .getQuantity();
+        if (ObjSize >= CGM.getCodeGenOpts().CopyProfStaticSizeThreshold) {
+          if (const auto *CD = dyn_cast<CXXConstructorDecl>(MD)) {
+            if (CD->isCopyConstructor())
+              Fn->addFnAttr("copyprof-copy-ctor", Twine(ObjSize).str());
+            else
+              Fn->addFnAttr("copyprof-ctor", Twine(ObjSize).str());
+          } else if (isa<CXXDestructorDecl>(MD))
+            Fn->addFnAttr("copyprof-dtor", Twine(ObjSize).str());
+          else if (MD->isCopyAssignmentOperator())
+            Fn->addFnAttr("copyprof-copy-assign-op", Twine(ObjSize).str());
+        }
+      }
+    }
+  }
+
   // If we're in C++ mode and the function name is "main", it is guaranteed
   // to be norecurse by the standard (3.6.1.3 "The function main shall not be
   // used within a program").

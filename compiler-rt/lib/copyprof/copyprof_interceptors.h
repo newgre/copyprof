@@ -1,0 +1,30 @@
+#ifndef COPYPROF_INTERCEPTORS_H
+#define COPYPROF_INTERCEPTORS_H
+
+#include "interception/interception.h"
+
+// Functions whose interceptor is defined in another TU.
+DECLARE_REAL(void*, memset, void* block, int c, SIZE_T size)
+
+// Functions whose interception and interceptor are defined in another TU.
+DECLARE_REAL_AND_INTERCEPTOR(void*, malloc, SIZE_T)
+DECLARE_REAL_AND_INTERCEPTOR(void, free, void*)
+
+// The macros below must be defined when using the interceptor infrastructure
+// (i.e. sanitizer_common_interceptors*.inc files).
+#define COPYPROF_INTERCEPT_FUNC(name)                            \
+  do {                                                           \
+    if (!INTERCEPT_FUNCTION(name))                               \
+      VReport(1, "CopyProf: failed to intercept '%s'\n", #name); \
+  } while (0)
+#define COMMON_INTERCEPT_FUNCTION(name) COPYPROF_INTERCEPT_FUNC(name)
+
+namespace __copyprof {
+
+// Initializes the interception infrastructure, s.t. CopyProf can hook into
+// library functions or syscalls. Must be called once during startup.
+void InitializeInterceptors();
+
+}  // namespace __copyprof
+
+#endif  // COPYPROF_INTERCEPTORS_H

@@ -1,0 +1,98 @@
+# Build for the CopyProf runtime support library.
+
+set(COPYPROF_SOURCES
+  copyprof.cpp
+  copyprof_allocator.cpp
+  copyprof_file_backend.cpp
+  copyprof_flags.cpp
+  copyprof_interceptors.cpp
+  copyprof_interceptors_memintrinsics.cpp
+  copyprof_malloc_linux.cpp
+  copyprof_preinit.cpp
+  copyprof_per_object_state.cpp
+  copyprof_report_buffer.cpp
+  copyprof_reporting.cpp
+  copyprof_report_sink.cpp
+  copyprof_stdout_backend.cpp
+  copyprof_shadow.cpp
+  copyprof_stack.cpp
+  copyprof_state.cpp
+)
+
+set(COPYPROF_CXX_SOURCES
+  copyprof_new_delete.cpp
+)
+
+set(COPYPROF_HEADERS
+  copyprof.h
+  copyprof_allocator.h
+  copyprof_file_backend.h
+  copyprof_flags.h
+  copyprof_interceptors.h
+  copyprof_interceptors_memintrinsics.h
+  copyprof_interface.h
+  copyprof_internal.h
+  copyprof_per_object_state.h
+  copyprof_report.h
+  copyprof_report_backend.h
+  copyprof_report_buffer.h
+  copyprof_reporting.h
+  copyprof_report_sink.h
+  copyprof_stdout_backend.h
+  copyprof_shadow.h
+  copyprof_stack.h
+  copyprof_state.h
+)
+
+include_directories(..)
+include_directories(../../include)
+
+set(COPYPROF_CFLAGS ${SANITIZER_COMMON_CFLAGS})
+set(COPYPROF_COMMON_DEFINITIONS "")
+append_rtti_flag(OFF COPYPROF_CFLAGS)
+
+# Compile CopyProf sources into an object library.
+add_compiler_rt_object_libraries(RTCopyProf
+  ARCHS ${COPYPROF_SUPPORTED_ARCH}
+  SOURCES ${COPYPROF_SOURCES}
+  ADDITIONAL_HEADERS ${COPYPROF_HEADERS}
+  CFLAGS ${COPYPROF_CFLAGS}
+  DEFS ${COPYPROF_COMMON_DEFINITIONS})
+add_compiler_rt_object_libraries(RTCopyProf_cxx
+  ARCHS ${COPYPROF_SUPPORTED_ARCH}
+  SOURCES ${COPYPROF_CXX_SOURCES}
+  ADDITIONAL_HEADERS ${COPYPROF_HEADERS}
+  CFLAGS ${COPYPROF_CFLAGS}
+  DEFS ${COPYPROF_COMMON_DEFINITIONS})
+
+# Build CopyProf runtimes shipped with Clang.
+add_compiler_rt_component(copyprof)
+
+set(COPYPROF_COMMON_RUNTIME_OBJECT_LIBS
+  RTInterception
+  RTSanitizerCommon
+  RTSanitizerCommonLibc
+  RTSanitizerCommonSymbolizer
+)
+
+add_compiler_rt_runtime(clang_rt.copyprof
+  STATIC
+  ARCHS ${COPYPROF_SUPPORTED_ARCH}
+  OBJECT_LIBS
+  RTCopyProf
+  ${COPYPROF_COMMON_RUNTIME_OBJECT_LIBS}
+  CFLAGS ${COPYPROF_CFLAGS}
+  DEFS ${COPYPROF_COMMON_DEFINITIONS}
+  PARENT_TARGET copyprof)
+
+add_compiler_rt_runtime(clang_rt.copyprof_cxx
+  STATIC
+  ARCHS ${COPYPROF_SUPPORTED_ARCH}
+  OBJECT_LIBS RTCopyProf_cxx
+  CFLAGS ${COPYPROF_CFLAGS}
+  DEFS ${COPYPROF_COMMON_DEFINITIONS}
+  PARENT_TARGET copyprof)
+
+if(COMPILER_RT_INCLUDE_TESTS)
+  add_subdirectory(tests)
+endif()
